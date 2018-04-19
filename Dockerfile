@@ -39,6 +39,13 @@ RUN 	echo 'gem: --no-document' >> /etc/gemrc && \
 	fluent-gem install fluent-plugin-notifier && \
 	rm -rf /tmp/* var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
-RUN adduser -D -g -u 1001 -h /home/fluent fluent
+#adduser --system [--home DIR] [--shell SHELL] [--no-create-home] [--uid ID]
+#[--gecos GECOS] [--group | --ingroup GROUP | --gid ID] [--disabled-password]
+#[--disabled-login] [--add_extra_groups] USER
+
+RUN addgroup --system --gid 1001 fluent && \
+    adduser --system --uid 1001 --gid 1001  --shell /usr/sbin/nologin  fluent
+
+
 
 #CMD /etc/init.d/td-agent stop && /opt/td-agent/embedded/bin/fluentd -c /etc/fluentd/fluent.conf
