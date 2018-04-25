@@ -21,11 +21,13 @@ RUN apt-get install -y ruby`ruby -e 'puts RUBY_VERSION[/\d+\.d+/]'`-dev
 
 # https://www.ruby-lang.org/en/documentation/installation/#apt
 
-RUN 	echo 'gem: --no-document' >> /etc/gemrc && \
+# gem install fluent-plugin-elasticsearch --no-rdoc --no-ri --version 1.9.2;
+
+RUN 	echo 'gem: --no-rdoc --no-ri' >> /etc/gemrc && \
 	fluent-gem install amqp && \
 	fluent-gem install cloudwatch && \
 	fluent-gem install cloudwatchlogger && \
-	fluent-gem install elasticsearch && \
+	gem install fluent-plugin-elasticsearch && \
 	fluent-gem install influxdb && \
 	fluent-gem install json && \
 	fluent-gem install kafka && \
@@ -43,9 +45,9 @@ RUN 	echo 'gem: --no-document' >> /etc/gemrc && \
 #[--gecos GECOS] [--group | --ingroup GROUP | --gid ID] [--disabled-password]
 #[--disabled-login] [--add_extra_groups] USER
 
-RUN addgroup --system --gid 1001 fluent && \
-    adduser --system --uid 1001 --gid 1001  --shell /usr/sbin/nologin  fluent
+#RUN addgroup --system --gid 1001 fluent && \
+#    adduser --system --uid 1001 --gid 1001  --shell /usr/sbin/nologin  fluent
 
 
-
+CMD ["/bin/entrypoint.sh"]
 #CMD /etc/init.d/td-agent stop && /opt/td-agent/embedded/bin/fluentd -c /etc/fluentd/fluent.conf

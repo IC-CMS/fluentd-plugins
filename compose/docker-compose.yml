@@ -1,0 +1,44 @@
+# Docker compose file from example on https://docs.fluentd.org/v0.12/articles/docker-logging-efk-compose
+version: '2'
+services:
+  # logs generated from the apached server are directed to fluentd via embedded logging driver
+  web:
+    image: httpd
+    ports:
+      - "80:80"
+    links:
+      - fluentd
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: httpd.access
+
+  fluentd:
+    image: sredna/fluentd-plugins:latest
+    command: "fluentd -c /fluentd/etc/fluent.conf"
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+    links:
+      - "elasticsearch"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    logging:
+      driver: "journald"
+    
+  # Index and data source for kibana
+  elasticsearch:
+    image: elasticsearch
+    # This port must be public
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: kibana
+    links:
+      - "elasticsearch"
+    ports:
+      - "5601:5601"
