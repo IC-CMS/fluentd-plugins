@@ -5,7 +5,7 @@
 #WORKING_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 WORKING_DIR=/tmp/fluentd
 DIR_NAME=${WORKING_DIR##*/}
-VERSION='latest'
+VERSION='v1.0'
 CONTAINER_NAME='fluentd-plugins'
 USERNAME=`whoami`
 REPO_AND_IMAGE="sredna/$CONTAINER_NAME"
@@ -58,6 +58,25 @@ function runInteractive {
     $IMG_STRING
 }
 
+function cleanDockerImage {
+  echo "Cleaning up Docker Image $1"
+  sudo docker ps -a \
+   | awk '{print $1,$2 }' \
+   | grep $1 \
+   | awk '{print $1}' \
+   | xargs -I {} sudo docker rm -f {}
+}
+
+function cleanDocker {
+echo "Cleaning any stopped containers and unused image layers"
+# remove built image for rebuild
+ sudo docker rmi $(sudo docker images -f "dangling=true" | grep none | awk {'print $3'})
+
+# remove any existing stopped containers
+ sudo docker ps -a | awk '{print $1}' | xargs sudo docker rm
+}
+
+
 while getopts "cdtiv:" arg; do
   case $arg in
     v)
@@ -88,27 +107,19 @@ while getopts "cdtiv:" arg; do
   esac
 done
 
-
 IMG_STRING="$REPO_AND_IMAGE:$VERSION"
-
-# remove built image for rebuild
-# sudo docker rmi $(docker images | grep -V $IMG_STRING | awk {'print $3'})
-
-# remove any existing stopped containers
-# sudo docker ps -a | awk '{print $1}' | xargs sudo docker rm
-sudo docker ps -a \
-  | awk '{print $1,$2 }' \
-  | grep $IMG_STRING \
-  | awk '{print $1}' \
-  | xargs -I {} sudo docker rm -f {}
+IMG_STRING_LATEST="$REPO_AND_IMAGE:latest"
 
 # build the image, removing intermediate layers, deleting cache
 if [ $CACHE = true ]; then
   echo "Building with caching enabled"
-  sudo docker build -t "$IMG_STRING" $DOCKER_FILE
+  sudo docker build -t "$IMG_STRING" -t "$IMG_STRING_LATEST" $DOCKER_FILE
 else
   echo "Building without cache"
-  sudo docker build --no-cache -t "$IMG_STRING" $DOCKER_FILE
+  cleanDocker
+  cleanDockerImage $IMG_STRING
+  cleanDockerImage $IMG_STRING_LATEST
+  sudo docker build --no-cache -t "$IMG_STRING" -t "$IMG_STRING_LATEST" $DOCKER_FILE
 fi
 
 if [ $? -gt 0 ]; then
